@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Builder Quest</title>
+    <!-- React and Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 selection:bg-blue-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICON WRAPPER COMPONENT ---
+        const Icon = ({ name, color = "currentColor", size = 32, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} style={{ color, width: size, height: size }} className={className}></i>;
+        };
+
+        // --- QUESTION DATABASE (50 Questions) ---
+        const QUESTION_BANK = [
+          { id: 1, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "Your team is falling behind on a deadline. What is the most effective first step?", options: ["Work 15-hour days individually", "Call a brief team meeting to reassess priorities", "Find out whose fault it is", "Ignore the deadline"], correct: "Call a brief team meeting to reassess priorities" },
+          { id: 2, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "Two colleagues are arguing over a design choice. What should you do?", options: ["Take a side", "Stay silent", "Suggest listing pros and cons", "Cancel the meeting"], correct: "Suggest listing pros and cons" },
+          { id: 3, category: 'Teamwork', icon: 'heart', color: '#ec4899', question: "A junior member makes a mistake causing a bug. How do you handle it?", options: ["Publicly scold them", "Fix it yourself secretly", "Privately walk them through the fix", "Revoke their access"], correct: "Privately walk them through the fix" },
+          { id: 4, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "A client gives vague feedback: 'Make it pop.' How does your team respond?", options: ["Use neon colors", "Ask clarifying questions", "Ignore the feedback", "Tell the client they are wrong"], correct: "Ask clarifying questions" },
+          { id: 5, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "A colleague suggests an idea you think is terrible. Your response?", options: ["Laugh at it", "Roll your eyes", "Acknowledge and try to build upon it", "Shoot it down"], correct: "Acknowledge and try to build upon it" },
+          { id: 6, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "A team member hasn't spoken during a planning session. What's the best approach?", options: ["Assume they have nothing to add", "Force them to speak", "Gently invite them to share thoughts", "Complain to the manager"], correct: "Gently invite them to share thoughts" },
+          { id: 7, category: 'Teamwork', icon: 'heart', color: '#ec4899', question: "Which framework is best for giving constructive criticism?", options: ["Blame and Shame", "Situation, Behavior, Impact (SBI)", "Vague email", "Annual review only"], correct: "Situation, Behavior, Impact (SBI)" },
+          { id: 8, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "Your remote team spans three global time zones. How do you schedule a sync?", options: ["Pick your best time", "Rotate meeting times shared equally", "Force others to 3 AM", "Never hold meetings"], correct: "Rotate meeting times shared equally" },
+          { id: 9, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "A colleague takes credit for your idea. What do you do?", options: ["Yell at them", "Say 'Glad you liked the idea I brought up'", "Quit your job", "Sabotage them"], correct: "Say 'Glad you liked the idea I brought up'" },
+          { id: 10, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "Going on a 2-week vacation. What is the most responsible hand-off?", options: ["Just leave auto-responder", "Create a clear handover document", "Tell boss verbally", "Give work to intern secretly"], correct: "Create a clear handover document" },
+          { id: 11, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "Two members are unknowingly working on the same task. Action?", options: ["Let them finish", "Bring them together to consolidate", "Delete one's work", "Fire one"], correct: "Bring them together to consolidate" },
+          { id: 12, category: 'Teamwork', icon: 'users', color: '#3b82f6', question: "What is 'Scope Creep' in project management?", options: ["A creepy person", "Fast finish", "Uncontrolled growth of requirements", "Code inspection"], correct: "Uncontrolled growth of requirements" },
+          { id: 13, category: 'Life Skills', icon: 'shield', color: '#22c55e', question: "You get an email from 'paypa1-security.com' asking for your password. What is it?", options: ["Legitimate warning", "System update", "Phishing scam", "Network error"], correct: "Phishing scam" },
+          { id: 14, category: 'Life Skills', icon: 'brain', color: '#a855f7', question: "Major presentation tomorrow and you feel overwhelmed. Strategy?", options: ["Stay up all night", "Drink 5 coffees", "Walk, breathe, and review key points", "Call in sick"], correct: "Walk, breathe, and review key points" },
+          { id: 15, category: 'Life Skills', icon: 'lightbulb', color: '#eab308', question: "What does the 50/30/20 rule recommend for budgeting?", options: ["50% Needs, 30% Wants, 20% Savings", "50% Savings, 30% Needs", "50% Wants, 30% Savings", "50% Rent, 30% Food"], correct: "50% Needs, 30% Wants, 20% Savings" },
+          { id: 16, category: 'Life Skills', icon: 'brain', color: '#a855f7', question: "Which is the strongest password?", options: ["password123", "admin", "CorrectHorseBatteryStaple!", "JohnDoe1990"], correct: "CorrectHorseBatteryStaple!" },
+          { id: 17, category: 'Life Skills', icon: 'lightbulb', color: '#eab308', question: "Find a USB drive in the parking lot. What should you do?", options: ["Plug it in to find owner", "Plug in at home", "Give to IT department", "Keep it"], correct: "Give to IT department" },
+          { id: 18, category: 'Life Skills', icon: 'brain', color: '#a855f7', question: "What is the 'Pomodoro Technique'?", options: ["Pasta sauce method", "25-min focus intervals", "Fast typing", "Sleeping for 20 mins"], correct: "25-min focus intervals" },
+          { id: 19, category: 'Life Skills', icon: 'lightbulb', color: '#eab308', question: "Difference between CC and BCC in email?", options: ["Text vs Attachments", "Visible vs Hidden copy", "Copy Cat vs Bad Copy Cat", "No difference"], correct: "Visible vs Hidden copy" },
+          { id: 20, category: 'Life Skills', icon: 'shield', color: '#22c55e', question: "A grease fire starts in a pan. Worst thing to do?", options: ["Turn off heat", "Cover with lid", "Use baking soda", "Pour water on it"], correct: "Pour water on it" },
+          { id: 21, category: 'Life Skills', icon: 'brain', color: '#a855f7', question: "SMART goals: S, M, A, R, and...?", options: ["Technical", "Time-bound", "Thoughtful", "Tolerable"], correct: "Time-bound" },
+          { id: 22, category: 'Life Skills', icon: 'lightbulb', color: '#eab308', question: "What is most important to look at first on a food label?", options: ["Calories", "Serving Size", "Vitamin C", "Box color"], correct: "Serving Size" },
+          { id: 23, category: 'Life Skills', icon: 'brain', color: '#a855f7', question: "What is 'Compound Interest'?", options: ["Principal interest only", "Bank fee", "Interest on principal and accumulated interest", "Mortgage type"], correct: "Interest on principal and accumulated interest" },
+          { id: 24, category: 'Life Skills', icon: 'shield', color: '#22c55e', question: "Proper ergonomics for monitor position?", options: ["Look way down", "Top of screen at eye level", "High up", "Far left"], correct: "Top of screen at eye level" },
+          { id: 25, category: 'Technical', icon: 'code', color: '#334155', question: "LIFO data structure?", options: ["Queue", "Stack", "Linked List", "Binary Tree"], correct: "Stack" },
+          { id: 26, category: 'Technical', icon: 'server', color: '#334155', question: "Critical server goes down. First step?", options: ["Acknowledge and assess impact", "Ignore", "Restart random services", "Delete database"], correct: "Acknowledge and assess impact" },
+          { id: 27, category: 'Technical', icon: 'wrench', color: '#334155', question: "Primary purpose of Git?", options: ["Faster code", "UI design", "Track changes and collaborate", "Fix bugs"], correct: "Track changes and collaborate" },
+          { id: 28, category: 'Technical', icon: 'code', color: '#334155', question: "HTML stands for?", options: ["Hyper Text Markup Language", "High Tech Modern", "Hyperlink", "Home Tool"], correct: "Hyper Text Markup Language" },
+          { id: 29, category: 'Technical', icon: 'server', color: '#334155', question: "What does 'HTTP 404' mean?", options: ["Overloaded", "Payment required", "Not Found", "Unauthorized"], correct: "Not Found" },
+          { id: 30, category: 'Technical', icon: 'code', color: '#334155', question: "What is an API?", options: ["Advanced Programming", "Application Programming Interface", "Automated Process", "Apple Product"], correct: "Application Programming Interface" },
+          { id: 31, category: 'Technical', icon: 'server', color: '#334155', question: "Purpose of a VPN?", options: ["Speed", "Secure encrypted connection", "Block ads", "Bypass payment"], correct: "Secure encrypted connection" },
+          { id: 32, category: 'Technical', icon: 'code', color: '#334155', question: "SQL vs NoSQL?", options: ["Images vs Text", "Tabular vs Non-tabular", "Free vs Paid", "No difference"], correct: "Tabular vs Non-tabular" },
+          { id: 33, category: 'Technical', icon: 'wrench', color: '#334155', question: "In Agile, what is a 'Sprint'?", options: ["Developer race", "Time-boxed work period", "Software bug", "Final release"], correct: "Time-boxed work period" },
+          { id: 34, category: 'Technical', icon: 'server', color: '#334155', question: "DNS stands for?", options: ["Domain Name System", "Digital Network", "Data Notation", "Download Node"], correct: "Domain Name System" },
+          { id: 35, category: 'Technical', icon: 'wrench', color: '#334155', question: "What is 2FA?", options: ["Two passwords", "Two forms of ID", "Double typing", "Two accounts"], correct: "Two forms of ID" },
+          { id: 36, category: 'Technical', icon: 'code', color: '#334155', question: "What ensures a unique record in a table?", options: ["Foreign Key", "Index", "Primary Key", "Row ID"], correct: "Primary Key" },
+          { id: 37, category: 'Playful Logic', icon: 'image', color: '#6366f1', question: "Pattern: 🔴 🔵 🔴 🔵 🔴 ?", options: ["🔴", "🔵", "🟢", "🟡"], correct: "🔵" },
+          { id: 38, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Measure 4L with 3L and 5L jugs?", options: ["Fill 3, pour to 5, repeat, etc.", "Fill 5 half way", "Impossible", "Pour out half"], correct: "Fill 3, pour to 5, repeat, etc." },
+          { id: 39, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "I speak without a mouth and hear without ears. What am I?", options: ["Cloud", "Echo", "Ghost", "Shadow"], correct: "Echo" },
+          { id: 40, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Pass the person in second place, what place are you?", options: ["First", "Second", "Third", "Last"], correct: "Second" },
+          { id: 41, category: 'Playful Logic', icon: 'image', color: '#6366f1', question: "Sequence: ⬜ ⬛ ⬜ ⬛. 7th shape?", options: ["⬜", "⬛", "🔲", "🔳"], correct: "⬜" },
+          { id: 42, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "I have keys but no locks. What am I?", options: ["House", "Keyboard", "Puzzle", "Safe"], correct: "Keyboard" },
+          { id: 43, category: 'Playful Logic', icon: 'image', color: '#6366f1', question: "Odd one out: ♠️ ♥️ ♣️ ♠️ ♥️ ♣️ ♦️", options: ["♠️", "♥️", "♣️", "♦️"], correct: "♦️" },
+          { id: 44, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Mary's father has children: North, South, East, and...?", options: ["West", "Mary", "John", "Equator"], correct: "Mary" },
+          { id: 45, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Bat and ball $1.10. Bat is $1.00 more. Ball costs?", options: ["$0.10", "$0.05", "$1.00", "$0.01"], correct: "$0.05" },
+          { id: 46, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Fibonacci: 1, 1, 2, 3, 5, 8, ?", options: ["10", "11", "12", "13"], correct: "13" },
+          { id: 47, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "What gets wetter the more it dries?", options: ["Sponge", "Towel", "Water", "Soap"], correct: "Towel" },
+          { id: 48, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Heavier: ton of bricks or ton of feathers?", options: ["Bricks", "Feathers", "Same", "Depends"], correct: "Same" },
+          { id: 49, category: 'Playful Logic', icon: 'image', color: '#6366f1', question: "🍎=10, 🍌🍌=8, 🍒=2. 🍎 + 🍌 + 🍒?", options: ["20", "16", "14", "18"], correct: "16" },
+          { id: 50, category: 'Playful Logic', icon: 'help-circle', color: '#f97316', question: "Single person on boat mystery?", options: ["Drowned", "Married", "Ghost", "Hiding"], correct: "Married" }
+        ];
+
+        const shuffleArray = (array) => {
+          const newArray = [...array];
+          for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+          }
+          return newArray;
+        };
+
+        function App() {
+          const [gameState, setGameState] = useState('start');
+          const [currentQuestions, setCurrentQuestions] = useState([]);
+          const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+          const [selectedAnswer, setSelectedAnswer] = useState(null);
+          const [isAnimating, setIsAnimating] = useState(false);
+
+          const startMatch = () => {
+            const shuffled = shuffleArray(QUESTION_BANK);
+            const selected = shuffled.slice(0, 3).map(q => ({
+              ...q,
+              options: shuffleArray(q.options)
+            }));
+            setCurrentQuestions(selected);
+            setCurrentQuestionIndex(0);
+            setSelectedAnswer(null);
+            setGameState('playing');
+          };
+
+          const handleAnswerClick = (option) => {
+            if (isAnimating) return;
+            setSelectedAnswer(option);
+            setIsAnimating(true);
+            const isCorrect = option === currentQuestions[currentQuestionIndex].correct;
+
+            setTimeout(() => {
+              if (isCorrect) {
+                if (currentQuestionIndex === 2) setGameState('won');
+                else {
+                  setCurrentQuestionIndex(prev => prev + 1);
+                  setSelectedAnswer(null);
+                }
+              } else setGameState('lost');
+              setIsAnimating(false);
+            }, 1200);
+          };
+
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+              <div className="w-full max-w-4xl">
+                {gameState === 'start' && (
+                  <div className="text-center animate-fade-in flex flex-col items-center">
+                    <div className="bg-blue-100 p-6 rounded-full mb-6">
+                      <Icon name="trophy" color="#2563eb" size={64} />
+                    </div>
+                    <h1 className="text-5xl font-extrabold text-slate-800 mb-4">Skill Builder Quest</h1>
+                    <p className="text-slate-600 mb-10 max-w-lg text-lg">Answer 3 random skills questions to win. One mistake and it's game over!</p>
+                    <button onClick={startMatch} className="bg-blue-600 text-white px-10 py-4 rounded-full font-bold text-xl hover:bg-blue-700 transition transform hover:scale-105 shadow-xl">Start Match</button>
+                  </div>
+                )}
+
+                {gameState === 'playing' && (
+                  <div className="animate-fade-in flex flex-col items-center">
+                    <div className="w-full max-w-2xl mb-10">
+                      <div className="flex justify-between text-xs font-bold uppercase text-slate-400 mb-2">
+                        <span>Match Progress</span>
+                        <span>{currentQuestionIndex + 1} / 3</span>
+                      </div>
+                      <div className="flex gap-2">
+                        {[0, 1, 2].map(s => (
+                          <div key={s} className={`h-3 rounded-full flex-1 transition-all ${s < currentQuestionIndex ? 'bg-green-500' : s === currentQuestionIndex ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                      <div className="bg-slate-50 p-6 flex gap-4 items-center border-b">
+                        <div className="bg-white p-3 rounded-xl shadow-sm">
+                          <Icon name={currentQuestions[currentQuestionIndex].icon} color={currentQuestions[currentQuestionIndex].color} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-400 uppercase">{currentQuestions[currentQuestionIndex].category}</p>
+                          <h2 className="text-2xl font-bold text-slate-800">{currentQuestions[currentQuestionIndex].question}</h2>
+                        </div>
+                      </div>
+                      <div className="p-6 grid gap-4">
+                        {currentQuestions[currentQuestionIndex].options.map((opt, i) => (
+                          <button key={i} disabled={selectedAnswer !== null} onClick={() => handleAnswerClick(opt)}
+                            className={`p-5 rounded-2xl text-left font-medium border-2 transition-all ${
+                              selectedAnswer === null ? 'border-slate-100 hover:border-blue-400 hover:bg-blue-50' :
+                              opt === currentQuestions[currentQuestionIndex].correct ? 'border-green-500 bg-green-50' :
+                              selectedAnswer === opt ? 'border-red-500 bg-red-50' : 'opacity-40 border-slate-100'
+                            }`}>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(gameState === 'won' || gameState === 'lost') && (
+                  <div className="text-center animate-fade-in flex flex-col items-center">
+                    <div className={`p-8 rounded-full mb-6 ${gameState === 'won' ? 'bg-green-100' : 'bg-red-100'}`}>
+                      <Icon name={gameState === 'won' ? 'trophy' : 'x-circle'} color={gameState === 'won' ? '#16a34a' : '#dc2626'} size={80} />
+                    </div>
+                    <h1 className={`text-6xl font-black mb-4 ${gameState === 'won' ? 'text-green-600' : 'text-red-600'}`}>{gameState === 'won' ? 'VICTORY' : 'GAME OVER'}</h1>
+                    <p className="text-slate-600 text-xl mb-10">{gameState === 'won' ? 'You mastered the quest!' : `Failed at Question ${currentQuestionIndex + 1}.`}</p>
+                    <button onClick={startMatch} className="bg-slate-800 text-white px-10 py-4 rounded-full font-bold text-xl hover:bg-black transition transform hover:scale-105 shadow-xl">Play Again</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
